@@ -1,0 +1,16 @@
+{
+  "name": "reportes-nextjs",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "postgres": "^3.4.5",
+    "zod": "^3.23.8"
+  }
+}

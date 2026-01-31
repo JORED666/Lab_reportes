@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tarea6_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: reportes
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./db/reports_vw.sql:/docker-entrypoint-initdb.d/03-reports_vw.sql
+      - ./db/indexes.sql:/docker-entrypoint-initdb.d/04-indexes.sql
+      - ./db/roles.sql:/docker-entrypoint-initdb.d/05-roles.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: ./app
+    container_name: tarea6_app
+    environment:
+      DATABASE_URL: postgres://app_reports_reader:reports_pass_2026@db:5432/reportes
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
