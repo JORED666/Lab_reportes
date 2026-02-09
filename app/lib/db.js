@@ -1,6 +1,7 @@
 import postgres from 'postgres';
 
-const sql = postgres(process.env.DATABASE_URL || 'postgres://app_reports_reader:reports_pass_2026@db:5432/reportes', {
+// NUNCA hardcodear credenciales - siempre usar variable de entorno
+const sql = postgres(process.env.DATABASE_URL, {
   max: 10
 });
 
@@ -55,5 +56,3 @@ export const db = {
     return sql`SELECT * FROM view_reporte_ejecutivo`;
   }
 };
-
-export default sql;
