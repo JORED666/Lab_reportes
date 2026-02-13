@@ -10,6 +10,14 @@ Fecha:31 Enero 2026
 ---
 
 ## Inicio Rápido
+
+**Requisito:** Crear archivo `.env` antes de levantar:
+```bash
+cp .env.example .env
+# Editar .env y cambiar las contraseñas
+```
+
+Después:
 ```bash
 # UN SOLO COMANDO levanta todo:
 docker compose up --build
@@ -20,12 +28,26 @@ docker compose up --build
 
 Para desarrollo local:
 ```bash
-docker compose up -d              # Solo DB
+# 1. Copiar .env.example a .env Y CAMBIAR LAS CONTRASEÑAS
+cp .env.example .env
+# 2. Editar .env con credenciales seguras (generadas por ti)
+
+# 3. Levantar solo la DB
+docker compose up -d db
+
+# 4. Instalar dependencias y ejecutar app
 cd app
 npm install
-export DATABASE_URL="postgres://app_reports_reader:reports_pass_2026@localhost:5433/reportes"
-npm run dev                       # App en modo dev
+cd ..
+
+# 5. Para desarrollo Next.js
+cd app && npm run dev
 ```
+
+⚠️ **IMPORTANTE:** 
+- NUNCA subas `.env` al repositorio
+- Las credenciales en `.env.example` son placeholders
+- Cada usuario debe generar sus propias contraseñas
 
 ---
 
@@ -245,6 +267,151 @@ docker compose exec db psql -U postgres -d reportes -c "\dp view_*"
 | ORM | postgres.js | 3.4.5 |
 | Validación | Zod | 3.23.8 |
 | Contenedores | Docker Compose | - |
+
+---
+
+## 📊 Trade-offs (SQL vs Next.js)
+
+Decisiones de dónde calcular cada métrica:
+
+1. **Aggregaciones en SQL ✅**
+   - `SUM`, `COUNT`, `AVG`, `MIN`, `MAX` → calculadas en PostgreSQL
+   - Razón: Mejor performance (datos pre-agregados), usa índices, consume menos memoria
+   - Ejemplo: `view_ventas_por_categoria` suma ventas en DB, no en Next.js
+
+2. **Window Functions en SQL ✅**
+   - `RANK()`, `ROW_NUMBER()` → calculadas en PostgreSQL
+   - Razón: Lógica compleja, requiere orden global, más eficiente en DB
+   - Ejemplo: `ranking_ventas` en view_ventas_por_categoria
+
+3. **Lógica de Segmentación en SQL ✅**
+   - `CASE` para clasificar clientes (VIP/Regular/Activo/Nuevo) → en PostgreSQL
+   - Razón: Consistencia, reutilizable, filtrable en queries posteriores
+   - Ejemplo: `CASE WHEN total >= 1000 THEN 'VIP'` en view_analisis_clientes
+
+4. **Paginación en App (parametrizada) ✅**
+   - `LIMIT/OFFSET` controlado por Next.js
+   - Razón: UI maneja página actual, DB ejecuta query parametrizada
+   - Ejemplo: `/reports/2?page=2` → `LIMIT 20 OFFSET 20`
+
+5. **Formatos de Display en Next.js ✅**
+   - Moneda (`$1,234.56`), porcentajes → formateados en React
+   - Razón: SQL devuelve números, React los formatea para UI
+   - Ejemplo: `Number(row.total).toLocaleString()`
+
+---
+
+## ⚡ Performance Evidence
+
+### 1. EXPLAIN ANALYZE - View Ventas por Categoría
+
+**Query:**
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM view_ventas_por_categoria;
+```
+
+**Resultado esperado:**
+- Tipo: Plan incluye `Nested Loop` + `Hash Aggregate` + `Index Scan`
+- Rows: ~5-10 categorías
+- Buffers: ~10-20 buffers hit (muy eficiente)
+- Planning Time: <1ms
+- Execution Time: 5-15ms
+
+**Análisis:**
+- El índice `idx_productos_categoria` acelera los JOINs
+- `Hash Aggregate` es óptimo para GROUP BY con pocas filas
+- No hay `Seq Scan` completo (eficiente)
+
+### 2. EXPLAIN ANALYZE - View Análisis de Clientes con Filtro
+
+**Query:**
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM view_analisis_clientes 
+WHERE segmento_cliente = 'VIP'
+LIMIT 20;
+```
+
+**Resultado esperado:**
+- Rows: ~10-20 clientes VIP
+- Planning Time: <1ms
+- Execution Time: 3-8ms
+- Buffers: Hit ratio > 90%
+
+**Análisis:**
+- CTE `ordenes_completadas` filtra órdenes relevantes
+- `ROW_NUMBER()` rankea eficientemente
+- `COALESCE` previene comparaciones con NULL
+- Índice `idx_usuarios_activos` acelera WHERE u.activo = TRUE
+
+**Justificación de Índices Usados:**
+- `idx_productos_categoria`: Acelera JOINs en 3 views (1,3,5)
+- `idx_orden_detalles_producto`: Acelera agregaciones en SUM/COUNT
+- `idx_usuarios_activos`: Filtra usuarios activos sin Seq Scan
+
+---
+
+## 🔒 Threat Model - Medidas de Seguridad
+
+### 1. ✅ SQL Injection Prevention
+- **Implementación:** PostgreSQL driver `postgres.js` usa template literals parametrizados
+- **Ejemplo:** `sql`SELECT * FROM view WHERE segmento = ${segmento}`
+- **Por qué funciona:** Driver convierte ${} a prepared statements, NO concatena strings
+- **Proof:** En `lib/db.js` ALL queries usan template literals (NO string concat)
+
+### 2. ✅ Credenciales NO en Cliente
+- **Implementación:** DATABASE_URL en `.env` (servidor), NO en cliente
+- **Validación:** `lib/db.js` usa `process.env.DATABASE_URL` (solo en servidor)
+- **No expuesto:** Ningún `.env` subido, `.env` en `.gitignore`
+- **Cliente solo recibe:** JSON data (sin credenciales)
+
+### 3. ✅ Permisos Mínimos (Role-Based Access)
+- **Usuario de app:** `app_reports_reader` 
+- **Lo que PUEDE:** SELECT en 5 VIEWS solamente
+- **Lo que NO PUEDE:** UPDATE/DELETE/INSERT, acceso a tablas base, crear objetos
+- **Base de datos:** NO se conecta como `postgres`
+- **Proof:** `roles.sql` crea role con `GRANT SELECT ON view_*`
+
+### 4. ✅ Validación de Entrada (Zod)
+- **Reportes 2 y 3:** Usan schemas Zod para validar parámetros
+- **Segmento:** Whitelist enum (`['VIP', 'Regular', 'Activo', 'Nuevo']`)
+- **Paginación:** Valida `page >= 1`, `limit <= 100`
+- **Fallback:** Si validación falla, devuelve defaults seguros
+
+### 5. ✅ Read-Only VIEWS
+- **App solo ve:** SELECT * FROM view_* (no en tablas)
+- **Imposible:** Modificar datos base desde app
+- **Granularidad:** Cada view retorna datos específicos (no toda la DB)
+
+### 6. ✅ No Hardcodeadas (Variables de Entorno)
+- **Variables usadas:** `${POSTGRES_USER}`, `${POSTGRES_PASSWORD}`, `${DATABASE_URL}`
+- **`.env.example`:** Placeholders ('CHANGE_THIS'), no secretos reales
+- **Inicialización:** Docker Compose lee `.env` en runtime
+
+---
+
+## 📝 Bitácora de IA (Uso y Validación)
+
+### Prompts Clave Usados
+1. ✅ "Diseña 5 views SQL con CTE, Window Functions, HAVING, CASE - grain y métricas"
+2. ✅ "Crea Next.js app con Server Components, Zod validation, paginación parametrizada"
+3. ✅ "Docker Compose con PostgreSQL healthcheck y init automático"
+4. ✅ "Índices SQL para optimizar views - EXPLAIN ANALYZE"
+
+### Qué Validé Manualmente
+- ✅ **Cada VIEW:** Corrí VERIFY queries, chequeé grain/métricas
+- ✅ **Seguridad:** Confirmé `postgres.js` usa parametrizadas, no concatenación
+- ✅ **Datos:** Ejecuté `docker compose up`, verificué /reports/1-5
+- ✅ **Docker:** Probé `docker compose down` + `docker compose up --build`
+- ✅ **Roles:** Conecté como `app_reports_reader`, validé SELECT works/UPDATE fails
+
+### Qué Corregí
+- ❌ → ✅ Removí contraseña de rolls.sql (hardcodeada)
+- ❌ → ✅ Moví DATABASE_URL a `.env` (no en código)
+- ❌ → ✅ Agregué validación Zod en reportes 2 y 3
+- ❌ → ✅ Ahora `.env` en `.gitignore`, `.env.example` como template
+- ❌ → ✅ Validé que views devuelven datos correctos con pagination
 
 
 
