@@ -1,15 +1,20 @@
 import { db } from '@/lib/db';
 import Link from 'next/link';
 
-export default async function Reporte2({ searchParams }) {
+interface SearchParams {
+  segmento?: string;
+  page?: string;
+}
+
+export default async function Reporte2({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const segmento = params.segmento || null;
   const page = Number(params.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
   
-  const data = await db.getAnalisisClientes({ segmento, limit, offset });
-  const total = await db.countClientes(segmento);
+  const data = await db.getAnalisisClientes({ segmento: segmento ?? undefined, limit, offset });
+  const total = await db.countClientes(segmento ?? undefined);
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -50,7 +55,7 @@ export default async function Reporte2({ searchParams }) {
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {data.map((row: any, i: number) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{row.orden_valor}</td>
                 <td style={{ padding: '0.75rem' }}>{row.nombre}</td>
@@ -86,7 +91,13 @@ export default async function Reporte2({ searchParams }) {
   );
 }
 
-function FilterButton({ href, active, children }) {
+interface FilterButtonProps {
+  href: string;
+  active: boolean;
+  children: string;
+}
+
+function FilterButton({ href, active, children }: FilterButtonProps) {
   return (
     <Link href={href} style={{
       padding: '0.5rem 1rem',

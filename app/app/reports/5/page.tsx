@@ -1,8 +1,14 @@
 import { db } from '@/lib/db';
 import Link from 'next/link';
 
+interface MetricItem {
+  label: string;
+  value: string | number;
+  highlight?: boolean;
+}
+
 export default async function Reporte5() {
-  const [data] = await db.getReporteEjecutivo();
+  const [data] = await db.getReporteEjecutivo() as any;
 
   return (
     <div>
@@ -57,7 +63,12 @@ export default async function Reporte5() {
   );
 }
 
-function MetricCard({ title, metrics }) {
+interface MetricCardProps {
+  title: string;
+  metrics: MetricItem[];
+}
+
+function MetricCard({ title, metrics }: MetricCardProps) {
   return (
     <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
       <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>{title}</h3>

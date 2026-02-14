@@ -1,12 +1,3 @@
--- ============================================
--- SCHEMA.SQL - Definición de Estructura
--- ============================================
--- Equipo: [Nombre del equipo]
--- Fecha: [Fecha]
--- Dominio: [Describir el dominio modelado]
--- ============================================
-
--- Limpiar tablas si existen (útil para desarrollo)
 -- CUIDADO: Esto borra todos los datos
 DROP TABLE IF EXISTS tabla_relacion CASCADE;
 DROP TABLE IF EXISTS tabla_hija CASCADE;
@@ -93,7 +84,7 @@ CREATE TABLE orden_detalles (
 CREATE INDEX idx_ordenes_usuario_id ON ordenes(usuario_id);
 
 -- Índice para búsquedas por categoría en productos
-CREATE INDEX idx_productos_categoria_id ON productos(categoria_id);
+-- CREATE INDEX idx_productos_categoria_id ON productos(categoria_id);
 
 -- Índice para búsquedas por status de orden
 CREATE INDEX idx_ordenes_status ON ordenes(status);
@@ -108,7 +99,3 @@ COMMENT ON TABLE productos IS 'Catálogo de productos disponibles';
 COMMENT ON TABLE ordenes IS 'Órdenes/pedidos de los usuarios';
 COMMENT ON TABLE orden_detalles IS 'Detalle de productos por orden';
 
--- ============================================
--- FIN DEL SCHEMA
--- ============================================
--- Para ejecutar: \i db/schema.sql

@@ -1,19 +1,3 @@
--- ============================================
--- SEED.SQL - Datos Iniciales
--- ============================================
--- Equipo: [Nombre del equipo]
--- Fecha: [Fecha]
--- ============================================
--- ORDEN DE INSERCIÓN:
--- 1. Catálogos (sin dependencias)
--- 2. Entidades principales
--- 3. Relaciones/transacciones
--- ============================================
-
--- ============================================
--- 1. CATÁLOGOS
--- ============================================
-
 INSERT INTO categorias (nombre, descripcion) VALUES
     ('Electrónica', 'Dispositivos electrónicos y accesorios'),
     ('Ropa', 'Vestimenta y accesorios de moda'),
@@ -21,9 +5,6 @@ INSERT INTO categorias (nombre, descripcion) VALUES
     ('Deportes', 'Equipamiento y ropa deportiva'),
     ('Libros', 'Libros físicos y digitales');
 
--- ============================================
--- 2. ENTIDADES PRINCIPALES
--- ============================================
 
 -- Usuarios (mínimo 6)
 INSERT INTO usuarios (email, nombre, password_hash) VALUES
@@ -57,9 +38,7 @@ INSERT INTO productos (codigo, nombre, descripcion, precio, stock, categoria_id)
     ('HOME-004', 'Planta Artificial', 'Decoración verde', 19.99, 200, 3),
     ('HOME-005', 'Cuadro Decorativo', 'Arte moderno 50x70cm', 44.99, 60, 3);
 
--- ============================================
--- 3. TRANSACCIONES/RELACIONES
--- ============================================
+
 
 -- Órdenes
 INSERT INTO ordenes (usuario_id, total, status) VALUES
@@ -95,9 +74,6 @@ INSERT INTO orden_detalles (orden_id, producto_id, cantidad, precio_unitario) VA
     -- Orden 6 de Donald
     (6, 4, 1, 399.99);   -- 1 Monitor
 
--- ============================================
--- 4. EDGE CASES (para versión 3 horas)
--- ============================================
 
 -- Caso: String largo pero válido
 INSERT INTO usuarios (email, nombre, password_hash) VALUES
@@ -109,27 +85,4 @@ INSERT INTO usuarios (email, nombre, password_hash) VALUES
 INSERT INTO productos (codigo, nombre, precio, stock, categoria_id) VALUES
     ('EDGE-001', 'Producto Gratuito', 0.00, 0, 1);  -- Precio y stock en 0
 
--- ============================================
--- CASO QUE DEBERÍA FALLAR (COMENTADO)
--- ============================================
--- Descomentar para probar que el constraint funciona:
 
--- Este INSERT falla por UNIQUE en email:
--- INSERT INTO usuarios (email, nombre, password_hash) 
--- VALUES ('ada@example.com', 'Otra Ada', 'hash');
--- ERROR: duplicate key value violates unique constraint "usuarios_email_key"
-
--- Este INSERT falla por CHECK en precio:
--- INSERT INTO productos (codigo, nombre, precio, stock, categoria_id) 
--- VALUES ('FAIL-001', 'Precio Negativo', -10.00, 5, 1);
--- ERROR: new row violates check constraint "productos_precio_check"
-
--- Este INSERT falla por CHECK en cantidad:
--- INSERT INTO orden_detalles (orden_id, producto_id, cantidad, precio_unitario) 
--- VALUES (1, 1, 0, 100.00);
--- ERROR: new row violates check constraint "orden_detalles_cantidad_check"
-
--- ============================================
--- FIN DEL SEED
--- ============================================
--- Para ejecutar: \i db/seed.sql

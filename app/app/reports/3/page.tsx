@@ -1,21 +1,19 @@
 import { db } from '@/lib/db';
-import { validateProductosFilter } from '@/lib/validations';
 import Link from 'next/link';
 
-export default async function Reporte3({ searchParams }) {
+interface SearchParams {
+  page?: string;
+}
+
+export default async function Reporte3({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
   
-  // ⭐ VALIDACIÓN CON ZOD
-  const validated = validateProductosFilter({
-    page: params.page || '1',
-    limit: params.limit || '10'
-  });
-  
-  const offset = (validated.page - 1) * validated.limit;
-  
-  const data = await db.getProductosTop({ limit: validated.limit, offset });
+  const data = await db.getProductosTop({ limit, offset });
   const total = await db.countProductos();
-  const totalPages = Math.ceil(total / validated.limit);
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div>
@@ -24,12 +22,12 @@ export default async function Reporte3({ searchParams }) {
       <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '1rem' }}>
         <h2 style={{ margin: '0 0 0.5rem 0' }}>📦 Productos Top</h2>
         <p style={{ color: '#6b7280', margin: '0 0 1rem 0' }}>
-          Top productos con alertas de inventario ⭐ CON PAGINACIÓN (Zod validation)
+          Top productos con alertas de inventario (CON PAGINACIÓN)
         </p>
       </div>
 
       <div style={{ background: '#fae8ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-        <strong>⭐ Validación Zod:</strong> Page (min 1), Limit (1-100)
+        <strong>Características SQL:</strong> RANK(), CASE (alertas), GROUP BY, HAVING
       </div>
 
       <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', marginBottom: '1rem', overflowX: 'auto' }}>
@@ -46,7 +44,7 @@ export default async function Reporte3({ searchParams }) {
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {data.map((row: any, i: number) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#a855f7' }}>{row.ranking_ventas}</td>
                 <td style={{ padding: '0.75rem', fontWeight: '500' }}>{row.producto}</td>
@@ -66,20 +64,18 @@ export default async function Reporte3({ searchParams }) {
       </div>
 
       {totalPages > 1 && (
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center' }}>
-          {validated.page > 1 && (
-            <Link href={`/reports/3?page=${validated.page - 1}`} 
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+          {page > 1 && (
+            <Link href={`/reports/3?page=${page - 1}`} 
                   style={{ padding: '0.5rem 1rem', background: '#a855f7', color: 'white', borderRadius: '4px', textDecoration: 'none' }}>
-              ← Anterior
+              Anterior
             </Link>
           )}
-          <span style={{ padding: '0.5rem 1rem', background: 'white', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
-            Página {validated.page} de {totalPages}
-          </span>
-          {validated.page < totalPages && (
-            <Link href={`/reports/3?page=${validated.page + 1}`}
+          <span style={{ padding: '0.5rem 1rem' }}>Página {page} de {totalPages}</span>
+          {page < totalPages && (
+            <Link href={`/reports/3?page=${page + 1}`}
                   style={{ padding: '0.5rem 1rem', background: '#a855f7', color: 'white', borderRadius: '4px', textDecoration: 'none' }}>
-              Siguiente →
+              Siguiente
             </Link>
           )}
         </div>
@@ -88,8 +84,12 @@ export default async function Reporte3({ searchParams }) {
   );
 }
 
-function AlertBadge({ text }) {
-  const colors = {
+interface AlertBadgeProps {
+  text: string;
+}
+
+function AlertBadge({ text }: AlertBadgeProps) {
+  const colors: Record<string, string> = {
     'SIN STOCK': '#ef4444',
     'CRÍTICO': '#f97316',
     'BAJO': '#eab308',

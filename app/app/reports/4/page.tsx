@@ -32,7 +32,7 @@ export default async function Reporte4() {
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {data.map((row: any, i: number) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '0.75rem', fontWeight: '500', textTransform: 'capitalize' }}>{row.status}</td>
                 <td style={{ padding: '0.75rem', textAlign: 'right' }}>{row.total_ordenes}</td>
@@ -55,8 +55,12 @@ export default async function Reporte4() {
   );
 }
 
-function PrioridadBadge({ text }) {
-  const colors = {
+interface PrioridadBadgeProps {
+  text: string;
+}
+
+function PrioridadBadge({ text }: PrioridadBadgeProps) {
+  const colors: Record<string, string> = {
     'ALTA': '#ef4444',
     'MEDIA': '#eab308',
     'BAJA': '#10b981'

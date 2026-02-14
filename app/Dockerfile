@@ -14,5 +14,5 @@ COPY . .
 # Exponer puerto
 EXPOSE 3000
 
-# Correr en modo desarrollo
-CMD ["npm", "run", "dev"]
+# Correr en modo desarrollo con puerto dinámico
+CMD ["sh", "-c", "npx next dev -p ${APP_PORT:-3000}"]

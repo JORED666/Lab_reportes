@@ -1,4 +1,4 @@
-CREATE ROLE app_reports_reader WITH LOGIN PASSWORD 'AppReader_BDA_2026';
+CREATE ROLE app_reports_reader WITH LOGIN;
 
 GRANT CONNECT ON DATABASE reportes TO app_reports_reader;
 

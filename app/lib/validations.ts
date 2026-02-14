@@ -14,7 +14,7 @@ export const ProductosFilterSchema = z.object({
 });
 
 // Función helper para validar
-export function validateClientesFilter(params) {
+export function validateClientesFilter(params: unknown) {
   const result = ClientesFilterSchema.safeParse(params);
   if (!result.success) {
     return { segmento: undefined, page: 1, limit: 20 };
@@ -22,7 +22,7 @@ export function validateClientesFilter(params) {
   return result.data;
 }
 
-export function validateProductosFilter(params) {
+export function validateProductosFilter(params: unknown) {
   const result = ProductosFilterSchema.safeParse(params);
   if (!result.success) {
     return { page: 1, limit: 10 };

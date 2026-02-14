@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      APP_READER_PASSWORD: ${APP_READER_PASSWORD}
     ports:
       - "${DB_PORT:-5433}:5432"
     volumes:
@@ -14,6 +15,7 @@ services:
       - ./db/reports_vw.sql:/docker-entrypoint-initdb.d/03-reports_vw.sql
       - ./db/indexes.sql:/docker-entrypoint-initdb.d/04-indexes.sql
       - ./db/roles.sql:/docker-entrypoint-initdb.d/05-roles.sql
+      - ./db/set_app_password.sh:/docker-entrypoint-initdb.d/06-set_app_password.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -25,8 +27,9 @@ services:
     container_name: tarea6_app
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      APP_PORT: ${APP_PORT:-3000}
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
     volumes:
       - ./app:/app
       - /app/node_modules

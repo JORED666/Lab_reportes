@@ -35,7 +35,7 @@ export default async function Reporte1() {
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {data.map((row: any, i: number) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                 <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#2563eb' }}>{row.ranking_ventas}</td>
                 <td style={{ padding: '0.75rem' }}>{row.categoria}</td>
@@ -56,8 +56,12 @@ export default async function Reporte1() {
   );
 }
 
-function Badge({ text }) {
-  const colors = {
+interface BadgeProps {
+  text: string;
+}
+
+function Badge({ text }: BadgeProps) {
+  const colors: Record<string, string> = {
     'Excelente': '#10b981',
     'Bueno': '#3b82f6',
     'Regular': '#f59e0b'

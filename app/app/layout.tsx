@@ -1,9 +1,15 @@
+import { ReactNode } from 'react';
+
 export const metadata = {
   title: 'Dashboard de Reportes SQL',
   description: 'Sistema de reportes con PostgreSQL Views',
 }
 
-export default function RootLayout({ children }) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es">
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif' }}>

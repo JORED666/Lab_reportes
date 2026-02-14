@@ -1,10 +1,17 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
 
+interface ReporteItem {
+  id: number;
+  titulo: string;
+  desc: string;
+  icon: string;
+}
+
 export default async function HomePage() {
   const [ejecutivo] = await db.getReporteEjecutivo();
   
-  const reportes = [
+  const reportes: ReporteItem[] = [
     { id: 1, titulo: 'Ventas por Categoría', desc: 'Análisis de ventas con ranking y performance', icon: '📊' },
     { id: 2, titulo: 'Análisis de Clientes', desc: 'Segmentación de clientes con filtros', icon: '👥' },
     { id: 3, titulo: 'Productos Top', desc: 'Top productos con paginación', icon: '📦' },
@@ -53,7 +60,12 @@ export default async function HomePage() {
   );
 }
 
-function KPI({ label, value }) {
+interface KPIProps {
+  label: string;
+  value: string | number;
+}
+
+function KPI({ label, value }: KPIProps) {
   return (
     <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '6px' }}>
       <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{value}</div>
